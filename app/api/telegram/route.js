@@ -4,86 +4,118 @@ import { supabase } from '../../../lib/supabaseClient';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+async function sendTelegramMessage(chatId, text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+  });
+}
+
 export async function POST(req) {
   try {
-    const formData = await req.formData();
-    const file = formData.get('file');
+    const body = await req.json();
+    const message = body.message;
 
-    if (!file) {
-      return NextResponse.json({ error: 'ไม่พบไฟล์รูปภาพ' }, { status: 400 });
+    if (!message) return NextResponse.json({ status: 'ok' });
+
+    const chatId = message.chat.id;
+    const userId = String(message.from.id);
+    const username = message.from.username || message.from.first_name || 'Anonymous';
+
+    if (message.text === '/start') {
+      await sendTelegramMessage(
+        chatId,
+        '🌱 *ยินดีต้อนรับสู่ EcoWaste AI!*\n\nถ่ายรูปขยะส่งมาให้ผมได้เลยครับ AI จะช่วยวิเคราะห์ประเภทขยะ วิธีแยก คาร์บอนที่ลดได้ และประเมินมูลค่าเงินบาทให้ทันที!'
+      );
+      return NextResponse.json({ status: 'ok' });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString('base64');
+    if (message.photo && message.photo.length > 0) {
+      await sendTelegramMessage(chatId, '🔍 *กำลังวิเคราะห์รูปภาพขยะ... กรุณารอสักครู่*');
 
-    const prompt = `
-      วิเคราะห์ภาพขยะนี้ และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่คำเกริ่น ห้ามใส่ markdown code block):
-      {
-        "item_name": "ชื่อขยะภาษาไทย",
-        "waste_type": "ประเภทขยะ (ขยะรีไซเคิล/ขยะทั่วไป/ขยะอันตราย/ขยะอินทรีย์)",
-        "bin_color": "สีถังขยะที่ต้องทิ้ง (เหลือง/น้ำเงิน/แดง/เขียว)",
-        "est_weight_g": 25,
-        "carbon_saved_kg": 0.075,
-        "est_value_thb": 0.30,
-        "disposal_guide": "ข้อแนะนำสั้นๆ ในการจัดเตรียมก่อนทิ้ง"
-      }
-    `;
+      const photo = message.photo[message.photo.length - 1];
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+      const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${photo.file_id}`);
+      const fileData = await fileRes.json();
+      const filePath = fileData.result.file_path;
+      const imgUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
 
-    // ระบบลองโมเดลที่มีอยู่โดยอัตโนมัติ (Fallback Logic)
-    const modelCandidates = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
-    let responseText = null;
-    let lastError = null;
+      const imgRes = await fetch(imgUrl);
+      const arrayBuffer = await imgRes.arrayBuffer();
+      const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
-    for (const modelName of modelCandidates) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const res = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Image,
-              mimeType: file.type || 'image/jpeg'
+      const prompt = `
+        วิเคราะห์ภาพขยะนี้ และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้:
+        {
+          "item_name": "ชื่อขยะภาษาไทย",
+          "waste_type": "ประเภทขยะ (ขยะรีไซเคิล/ขยะทั่วไป/ขยะอันตราย/ขยะอินทรีย์)",
+          "bin_color": "สีถังขยะที่ต้องทิ้ง (เหลือง/น้ำเงิน/แดง/เขียว)",
+          "est_weight_g": 25,
+          "carbon_saved_kg": 0.075,
+          "est_value_thb": 0.30,
+          "disposal_guide": "ข้อแนะนำสั้นๆ ในการจัดเตรียมก่อนทิ้ง"
+        }
+      `;
+
+      const modelCandidates = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      let responseText = null;
+
+      for (const modelName of modelCandidates) {
+        try {
+          const model = genAI.getGenerativeModel({ model: modelName });
+          const res = await model.generateContent([
+            prompt,
+            {
+              inlineData: {
+                data: base64Image,
+                mimeType: 'image/jpeg'
+              }
             }
-          }
-        ]);
-        responseText = res.response.text();
-        if (responseText) break; // สำเร็จ
-      } catch (err) {
-        lastError = err;
-        console.warn(`Model ${modelName} failed, trying next...`);
+          ]);
+          responseText = res.response.text();
+          if (responseText) break;
+        } catch (e) {
+          console.warn(`Telegram scan model ${modelName} failed`);
+        }
       }
+
+      if (!responseText) throw new Error('ไม่สามารถเรียกใช้ Gemini AI ได้');
+
+      const cleanedText = responseText.replace(/```json|```/g, '').trim();
+      const result = JSON.parse(cleanedText);
+
+      await supabase.from('waste_logs').insert([
+        {
+          telegram_user_id: userId,
+          telegram_username: username,
+          item_name: result.item_name,
+          waste_type: result.waste_type,
+          bin_color: result.bin_color,
+          est_weight_g: result.est_weight_g,
+          carbon_saved_kg: result.carbon_saved_kg,
+          est_value_thb: result.est_value_thb,
+          disposal_guide: result.disposal_guide,
+        }
+      ]);
+
+      const replyMsg = 
+        `✨ *ผลการวิเคราะห์ขยะอัจฉริยะ*\n\n` +
+        `📦 *รายการ:* ${result.item_name}\n` +
+        `🏷️ *หมวดหมู่:* ${result.waste_type}\n` +
+        `🗑️ *ทิ้งในถังสี:* ${result.bin_color}\n` +
+        `⚖️ *น้ำหนักประเมิน:* ~${result.est_weight_g} กรัม\n\n` +
+        `🍃 *ลดคาร์บอนได้:* +${result.carbon_saved_kg} kgCO2e\n` +
+        `💰 *มูลค่าประเมิน:* +${result.est_value_thb} บาท\n\n` +
+        `💡 *วิธีจัดเตรียมก่อนทิ้ง:* ${result.disposal_guide}`;
+
+      await sendTelegramMessage(chatId, replyMsg);
     }
 
-    if (!responseText) {
-      throw new Error(lastError ? lastError.message : 'ไม่สามารถเชื่อมต่อ AI Model ได้');
-    }
-
-    // Clean JSON String
-    const cleanedText = responseText
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
-
-    const result = JSON.parse(cleanedText);
-
-    // บันทึกลง Supabase
-    await supabase.from('waste_logs').insert([
-      {
-        telegram_user_id: 'web_user',
-        telegram_username: 'Web User',
-        item_name: result.item_name || 'ขยะไม่ระบุชื่อ',
-        waste_type: result.waste_type || 'ขยะทั่วไป',
-        bin_color: result.bin_color || 'น้ำเงิน',
-        est_weight_g: result.est_weight_g || 0,
-        carbon_saved_kg: result.carbon_saved_kg || 0,
-        est_value_thb: result.est_value_thb || 0,
-        disposal_guide: result.disposal_guide || 'ทิ้งลงถังให้ถูกต้อง',
-      }
-    ]);
-
-    return NextResponse.json({ success: true, result });
+    return NextResponse.json({ status: 'ok' });
   } catch (err) {
-    console.error('API Scan Error:', err);
+    console.error(err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
