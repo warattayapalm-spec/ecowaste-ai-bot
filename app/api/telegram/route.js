@@ -59,7 +59,7 @@ export async function POST(req) {
         }
       `;
 
-      const modelCandidates = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      const modelCandidates = ['gemini-3.8-flash', 'gemini-1.5-flash'];
       let responseText = null;
 
       for (const modelName of modelCandidates) {
