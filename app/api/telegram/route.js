@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '@/lib/supabaseClient';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function sendTelegramMessage(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -26,7 +26,10 @@ export async function POST(req) {
 
     // คำสั่ง /start
     if (message.text === '/start') {
-      await sendTelegramMessage(chatId, '🌱 *ยินดีต้อนรับสู่ EcoWaste AI!*\n\nถ่ายรูปขยะส่งมาให้ผมได้เลยครับ AI จะช่วยวิเคราะห์ประเภทขยะ วิธีแยก คาร์บอนที่ลดได้ และประเมินมูลค่าเงินบาทให้ทันที!');
+      await sendTelegramMessage(
+        chatId,
+        '🌱 *ยินดีต้อนรับสู่ EcoWaste AI!*\n\nถ่ายรูปขยะส่งมาให้ผมได้เลยครับ AI จะช่วยวิเคราะห์ประเภทขยะ วิธีแยก คาร์บอนที่ลดได้ และประเมินมูลค่าเงินบาทให้ทันที!'
+      );
       return NextResponse.json({ status: 'ok' });
     }
 
@@ -85,20 +88,18 @@ export async function POST(req) {
         }
       `;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: prompt }
-            ]
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const response = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: 'image/jpeg'
           }
-        ]
-      });
+        }
+      ]);
 
-      const rawText = response.text.replace(/```json|```/g, '').trim();
+      const rawText = response.response.text().replace(/```json|```/g, '').trim();
       const result = JSON.parse(rawText);
 
       // บันทึกลง Supabase
