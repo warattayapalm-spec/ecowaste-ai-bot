@@ -88,7 +88,8 @@ export async function POST(req) {
         }
       `;
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      // ใช้โมเดล gemini-1.5-flash-latest เพื่อป้องกัน Error 404
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
       const response = await model.generateContent([
         prompt,
         {
