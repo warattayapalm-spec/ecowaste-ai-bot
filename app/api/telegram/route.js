@@ -88,17 +88,30 @@ export async function POST(req) {
         }
       `;
 
-      // ใช้โมเดล gemini-1.5-flash-latest เพื่อป้องกัน Error 404
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
-      const response = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Image,
-            mimeType: 'image/jpeg'
+      let response;
+      try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        response = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType: 'image/jpeg'
+            }
           }
-        }
-      ]);
+        ]);
+      } catch (e) {
+        const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        response = await fallbackModel.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType: 'image/jpeg'
+            }
+          }
+        ]);
+      }
 
       const rawText = response.response.text().replace(/```json|```/g, '').trim();
       const result = JSON.parse(rawText);
