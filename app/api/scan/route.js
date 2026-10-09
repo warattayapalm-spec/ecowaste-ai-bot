@@ -29,8 +29,8 @@ export async function POST(req) {
       }
     `;
 
-    // ระบบลองโมเดลที่มีอยู่โดยอัตโนมัติ (Fallback Logic)
-    const modelCandidates = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+    // ใช้ gemini-3.8-flash ตามที่ Google API แจ้งใน Error
+    const modelCandidates = ['gemini-3.8-flash', 'gemini-1.5-flash'];
     let responseText = null;
     let lastError = null;
 
@@ -47,7 +47,7 @@ export async function POST(req) {
           }
         ]);
         responseText = res.response.text();
-        if (responseText) break; // สำเร็จ
+        if (responseText) break;
       } catch (err) {
         lastError = err;
         console.warn(`Model ${modelName} failed, trying next...`);
@@ -58,7 +58,6 @@ export async function POST(req) {
       throw new Error(lastError ? lastError.message : 'ไม่สามารถเชื่อมต่อ AI Model ได้');
     }
 
-    // Clean JSON String
     const cleanedText = responseText
       .replace(/```json/gi, '')
       .replace(/```/g, '')
@@ -66,7 +65,6 @@ export async function POST(req) {
 
     const result = JSON.parse(cleanedText);
 
-    // บันทึกลง Supabase
     await supabase.from('waste_logs').insert([
       {
         telegram_user_id: 'web_user',
