@@ -62,7 +62,6 @@ export async function POST(req) {
     if (message.photo && message.photo.length > 0) {
       await sendTelegramMessage(chatId, '🔍 *กำลังวิเคราะห์รูปภาพขยะ... กรุณารอสักครู่*');
 
-      // ดึง URL รูปภาพจาก Telegram
       const photo = message.photo[message.photo.length - 1];
       const token = process.env.TELEGRAM_BOT_TOKEN;
       const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${photo.file_id}`);
@@ -74,7 +73,6 @@ export async function POST(req) {
       const arrayBuffer = await imgRes.arrayBuffer();
       const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
-      // เรียก Gemini AI
       const prompt = `
         วิเคราะห์ภาพขยะนี้ และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่ markdown code block หรือคำอื่นเด็ดขาด):
         {
@@ -88,30 +86,17 @@ export async function POST(req) {
         }
       `;
 
-      let response;
-      try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        response = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Image,
-              mimeType: 'image/jpeg'
-            }
+      // ใช้โมเดล gemini-2.5-flash ตามที่ระบบแนะนำ
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const response = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: 'image/jpeg'
           }
-        ]);
-      } catch (e) {
-        const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        response = await fallbackModel.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Image,
-              mimeType: 'image/jpeg'
-            }
-          }
-        ]);
-      }
+        }
+      ]);
 
       const rawText = response.response.text().replace(/```json|```/g, '').trim();
       const result = JSON.parse(rawText);
@@ -131,7 +116,6 @@ export async function POST(req) {
         }
       ]);
 
-      // ตอบกลับผู้ใช้ทาง Telegram
       const replyMsg = 
         `✨ *ผลการวิเคราะห์ขยะอัจฉริยะ*\n\n` +
         `📦 *รายการ:* ${result.item_name}\n` +
