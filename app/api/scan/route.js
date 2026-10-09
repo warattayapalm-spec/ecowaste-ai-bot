@@ -17,7 +17,7 @@ export async function POST(req) {
     const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
     const prompt = `
-      วิเคราะห์ภาพขยะนี้ และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่ markdown code block หรือคำอื่นเด็ดขาด):
+      วิเคราะห์ภาพขยะนี้ และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่คำเกริ่น ห้ามใส่ markdown code block):
       {
         "item_name": "ชื่อขยะภาษาไทย",
         "waste_type": "ประเภทขยะ (ขยะรีไซเคิล/ขยะทั่วไป/ขยะอันตราย/ขยะอินทรีย์)",
@@ -29,39 +29,61 @@ export async function POST(req) {
       }
     `;
 
-    // ใช้โมเดล gemini-2.5-flash ตามที่ระบบแนะนำ
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const response = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Image,
-          mimeType: file.type || 'image/jpeg'
-        }
-      }
-    ]);
+    // ระบบลองโมเดลที่มีอยู่โดยอัตโนมัติ (Fallback Logic)
+    const modelCandidates = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+    let responseText = null;
+    let lastError = null;
 
-    const rawText = response.response.text().replace(/```json|```/g, '').trim();
-    const result = JSON.parse(rawText);
+    for (const modelName of modelCandidates) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const res = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType: file.type || 'image/jpeg'
+            }
+          }
+        ]);
+        responseText = res.response.text();
+        if (responseText) break; // สำเร็จ
+      } catch (err) {
+        lastError = err;
+        console.warn(`Model ${modelName} failed, trying next...`);
+      }
+    }
+
+    if (!responseText) {
+      throw new Error(lastError ? lastError.message : 'ไม่สามารถเชื่อมต่อ AI Model ได้');
+    }
+
+    // Clean JSON String
+    const cleanedText = responseText
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+
+    const result = JSON.parse(cleanedText);
 
     // บันทึกลง Supabase
     await supabase.from('waste_logs').insert([
       {
         telegram_user_id: 'web_user',
         telegram_username: 'Web User',
-        item_name: result.item_name,
-        waste_type: result.waste_type,
-        bin_color: result.bin_color,
-        est_weight_g: result.est_weight_g,
-        carbon_saved_kg: result.carbon_saved_kg,
-        est_value_thb: result.est_value_thb,
-        disposal_guide: result.disposal_guide,
+        item_name: result.item_name || 'ขยะไม่ระบุชื่อ',
+        waste_type: result.waste_type || 'ขยะทั่วไป',
+        bin_color: result.bin_color || 'น้ำเงิน',
+        est_weight_g: result.est_weight_g || 0,
+        carbon_saved_kg: result.carbon_saved_kg || 0,
+        est_value_thb: result.est_value_thb || 0,
+        disposal_guide: result.disposal_guide || 'ทิ้งลงถังให้ถูกต้อง',
       }
     ]);
 
     return NextResponse.json({ success: true, result });
   } catch (err) {
-    console.error(err);
+    console.error('API Scan Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
