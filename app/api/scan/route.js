@@ -29,8 +29,8 @@ export async function POST(req) {
       }
     `;
 
-    // ใช้ gemini-3.8-flash ตามที่ Google API แจ้งใน Error
-    const modelCandidates = ['gemini-3.8-flash', 'gemini-1.5-flash'];
+    
+    const modelCandidates = ['gemini-2.5-flash', 'gemini-flash-latest'];
     let responseText = null;
     let lastError = null;
 
