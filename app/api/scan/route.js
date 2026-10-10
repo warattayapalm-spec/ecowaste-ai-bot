@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '../../../lib/supabaseClient';
 
 export async function POST(req) {
   try {
@@ -26,6 +27,7 @@ export async function POST(req) {
       }
     `;
 
+    // ใช้โมเดล Vision หลักของ Groq ที่เสถียร พร้อมจำกัด max_tokens ป้องกัน Error
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -63,6 +65,26 @@ export async function POST(req) {
     const responseText = groqData.choices[0].message.content;
     const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
     const result = JSON.parse(cleanedText);
+
+    // บันทึกลง Supabase
+    const { error: dbError } = await supabase.from('waste_logs').insert([
+      {
+        telegram_user_id: 'web_user',
+        telegram_username: 'Web User',
+        item_name: result.item_name || 'ขยะไม่ระบุชื่อ',
+        waste_type: result.waste_type || 'ขยะทั่วไป',
+        bin_color: result.bin_color || 'น้ำเงิน',
+        est_weight_g: Number(result.est_weight_g) || 0,
+        carbon_saved_kg: Number(result.carbon_saved_kg) || 0,
+        est_value_thb: Number(result.est_value_thb) || 0,
+        disposal_guide: result.disposal_guide || 'ทิ้งลงถังขยะให้ถูกต้อง',
+      }
+    ]);
+
+    if (dbError) {
+      console.error('Supabase Insert Error:', dbError);
+      throw new Error(`บันทึกฐานข้อมูลไม่สำเร็จ: ${dbError.message}`);
+    }
 
     return NextResponse.json({ success: true, result });
   } catch (err) {
