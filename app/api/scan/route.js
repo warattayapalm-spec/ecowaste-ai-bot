@@ -61,3 +61,12 @@ export async function POST(req) {
     }
 
     const responseText = groqData.choices[0].message.content;
+    const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const result = JSON.parse(cleanedText);
+
+    return NextResponse.json({ success: true, result });
+  } catch (err) {
+    console.error('API Scan Error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
