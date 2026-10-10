@@ -6,8 +6,8 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [preview, setPreview] = useState(null);
   
-  // State สำหรับเครื่องมือคำนวณหลายประเภท
-  const [itemType, setItemType] = useState('pet'); // pet, can, cardboard, glass
+  // State สำหรับเครื่องมือคำนวณ
+  const [itemType, setItemType] = useState('pet');
   const [itemCount, setItemCount] = useState(10);
   
   const fileInputRef = useRef(null);
@@ -47,18 +47,23 @@ export default function Home() {
     }
   };
 
-  // ฐานข้อมูลอัตราส่วนคำนวณต่อชิ้น/หน่วย
+  // ฐานข้อมูลอิงตามรูปภาพอ้างอิง:
+  // PET: 1.04 kgCO2e / kg
+  // อลูมิเนียม: 9.13 kgCO2e / kg
+  // ขวดแก้ว: 0.28 kgCO2e / kg
+  // ลังกระดาษ: 3.14 kgCO2e / kg
   const wasteRates = {
-    pet: { name: 'ขวดพลาสติกใส (PET)', unit: 'ขวด', weightG: 25, priceThb: 0.25, carbonKg: 0.026 },
-    can: { name: 'กระป๋องอลูมิเนียม', unit: 'กระป๋อง', weightG: 15, priceThb: 0.50, carbonKg: 0.095 },
-    cardboard: { name: 'กล่องลังกระดาษ', unit: 'กล่อง', weightG: 150, priceThb: 0.45, carbonKg: 0.120 },
-    glass: { name: 'ขวดแก้ว', unit: 'ขวด', weightG: 200, priceThb: 0.60, carbonKg: 0.080 },
+    pet: { name: 'ขวดพลาสติกใส (PET)', unit: 'ขวด', weightG: 25, priceThb: 0.25, carbonPerKg: 1.04 },
+    can: { name: 'กระป๋องอลูมิเนียม', unit: 'กระป๋อง', weightG: 15, priceThb: 0.50, carbonPerKg: 9.13 },
+    cardboard: { name: 'กล่องลังกระดาษ', unit: 'กล่อง', weightG: 150, priceThb: 0.45, carbonPerKg: 3.14 },
+    glass: { name: 'ขวดแก้ว', unit: 'ขวด', weightG: 200, priceThb: 0.60, carbonPerKg: 0.28 },
   };
 
   const selectedRate = wasteRates[itemType];
-  const calcWeight = ((itemCount * selectedRate.weightG) / 1000).toFixed(2);
+  const totalWeightKg = (itemCount * selectedRate.weightG) / 1000;
+  const calcWeight = totalWeightKg.toFixed(2);
   const calcValue = (itemCount * selectedRate.priceThb).toFixed(2);
-  const calcCarbon = (itemCount * selectedRate.carbonKg).toFixed(3);
+  const calcCarbon = (totalWeightKg * selectedRate.carbonPerKg).toFixed(3);
 
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -242,18 +247,18 @@ export default function Home() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ background: '#0f172a', padding: '0.85rem 1rem', borderRadius: '12px', borderLeft: '3px solid #38bdf8' }}>
-                <div style={{ fontWeight: '700', color: '#38bdf8', fontSize: '0.85rem', marginBottom: '0.2rem' }}>🥤 ขวดพลาสติก 20 ขวด</div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>สามารถนำไปรีไซเคิลเป็นเสื้อยืดกีฬาได้ 1 ตัว</div>
-              </div>
-
-              <div style={{ background: '#0f172a', padding: '0.85rem 1rem', borderRadius: '12px', borderLeft: '3px solid #34d399' }}>
-                <div style={{ fontWeight: '700', color: '#34d399', fontSize: '0.85rem', marginBottom: '0.2rem' }}>💧 ล้างขวดก่อนทิ้ง</div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>การล้างคราบน้ำหวานออก ช่วยเพิ่มโอกาสในการรีไซเคิลได้ถึง 90%</div>
+                <div style={{ fontWeight: '700', color: '#38bdf8', fontSize: '0.85rem', marginBottom: '0.2rem' }}>🥤 ขวด PET (1 กิโลกรัม)</div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ช่วยลดคาร์บอนไดออกไซด์ได้ถึง 1.04 kgCO2e[span_4](start_span)[span_4](end_span)</div>
               </div>
 
               <div style={{ background: '#0f172a', padding: '0.85rem 1rem', borderRadius: '12px', borderLeft: '3px solid #fbbf24' }}>
-                <div style={{ fontWeight: '700', color: '#fbbf24', fontSize: '0.85rem', marginBottom: '0.2rem' }}>🥫 กระป๋องอลูมิเนียม</div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>สามารถนำไปหลอมรีไซเคิลใหม่ได้ไม่จำกัดจำนวนครั้ง</div>
+                <div style={{ fontWeight: '700', color: '#fbbf24', fontSize: '0.85rem', marginBottom: '0.2rem' }}>🥫 กระป๋องอลูมิเนียม (1 กิโลกรัม)</div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ช่วยลดคาร์บอนไดออกไซด์ได้ถึง 9.13 kgCO2e[span_5](start_span)[span_5](end_span)</div>
+              </div>
+
+              <div style={{ background: '#0f172a', padding: '0.85rem 1rem', borderRadius: '12px', borderLeft: '3px solid #34d399' }}>
+                <div style={{ fontWeight: '700', color: '#34d399', fontSize: '0.85rem', marginBottom: '0.2rem' }}>📦 กล่องลังกระดาษ (1 กิโลกรัม)</div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ช่วยลดคาร์บอนไดออกไซด์ได้ถึง 3.14 kgCO2e[span_6](start_span)[span_6](end_span)</div>
               </div>
             </div>
           </section>
