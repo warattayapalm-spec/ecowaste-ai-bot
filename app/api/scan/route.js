@@ -29,8 +29,14 @@ export async function POST(req) {
       }
     `;
 
-    // ใช้ gemini-3.8-flash เป็นตัวหลักตามที่ Google API แนะนำ
-    const modelCandidates = ['gemini-3.8-flash', 'gemini-1.5-flash'];
+    // รายชื่อโมเดลที่รองรับ Free Tier API Key ในปัจจุบัน
+    const modelCandidates = [
+      'gemini-2.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash'
+    ];
+
     let responseText = null;
     let lastError = null;
 
@@ -46,19 +52,23 @@ export async function POST(req) {
             }
           }
         ]);
-        responseText = res.response.text();
-        if (responseText) break;
+        
+        const candidateText = res.response.text();
+        if (candidateText && candidateText.trim().length > 0) {
+          responseText = candidateText;
+          break; // เมื่อพบโมเดลที่ใช้งานได้ ให้หยุดวนลูปทันที
+        }
       } catch (err) {
         lastError = err;
-        console.warn(`Model ${modelName} failed, trying next candidate...`);
+        console.warn(`Model candidate [${modelName}] failed, trying next...`, err.message);
       }
     }
 
     if (!responseText) {
-      throw new Error(lastError ? lastError.message : 'ไม่สามารถเชื่อมต่อ AI Model ได้');
+      throw new Error(lastError ? `[AI Service Error]: ${lastError.message}` : 'ไม่สามารถดึงข้อมูลจาก AI Model ได้');
     }
 
-    // ทำความสะอาด JSON Response
+    // ทำความสะอาด JSON Response (ตัด markdown code blocks ออก)
     const cleanedText = responseText
       .replace(/```json/gi, '')
       .replace(/```/g, '')
@@ -74,16 +84,16 @@ export async function POST(req) {
         item_name: result.item_name || 'ขยะไม่ระบุชื่อ',
         waste_type: result.waste_type || 'ขยะทั่วไป',
         bin_color: result.bin_color || 'น้ำเงิน',
-        est_weight_g: result.est_weight_g || 0,
-        carbon_saved_kg: result.carbon_saved_kg || 0,
-        est_value_thb: result.est_value_thb || 0,
-        disposal_guide: result.disposal_guide || 'ทิ้งลงถังให้ถูกต้อง',
+        est_weight_g: Number(result.est_weight_g) || 0,
+        carbon_saved_kg: Number(result.carbon_saved_kg) || 0,
+        est_value_thb: Number(result.est_value_thb) || 0,
+        disposal_guide: result.disposal_guide || 'ทิ้งลงถังขยะให้ถูกต้อง',
       }
     ]);
 
     return NextResponse.json({ success: true, result });
   } catch (err) {
-    console.error('API Scan Error:', err);
+    console.error('API Scan Error Details:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
