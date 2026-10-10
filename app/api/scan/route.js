@@ -17,20 +17,20 @@ export async function POST(req) {
     const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
     const prompt = `
-      วิเคราะห์ภาพขยะนี้ และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่คำเกริ่น ห้ามใส่ markdown code block):
+      วิเคราะห์ภาพขยะนี้อย่างละเอียด และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่คำเกริ่น ห้ามใส่ markdown code block หรือคำอื่นเด็ดขาด):
       {
-        "item_name": "ชื่อขยะภาษาไทย",
-        "waste_type": "ประเภทขยะ (ขยะรีไซเคิล/ขยะทั่วไป/ขยะอันตราย/ขยะอินทรีย์)",
-        "bin_color": "สีถังขยะที่ต้องทิ้ง (เหลือง/น้ำเงิน/แดง/เขียว)",
-        "est_weight_g": 25,
-        "carbon_saved_kg": 0.075,
-        "est_value_thb": 0.30,
-        "disposal_guide": "ข้อแนะนำสั้นๆ ในการจัดเตรียมก่อนทิ้ง"
+        "item_name": "ชื่อขยะภาษาไทยอย่างเป็นทางการ",
+        "waste_type": "ประเภทขยะ (ขยะรีไซเคิล / ขยะทั่วไป / ขยะอันตราย / ขยะอินทรีย์)",
+        "bin_color": "สีถังขยะที่ต้องทิ้ง (เหลือง / น้ำเงิน / แดง / เขียว)",
+        "est_weight_g": 35,
+        "carbon_saved_kg": 0.085,
+        "est_value_thb": 0.50,
+        "disposal_guide": "ข้อแนะนำสั้นๆ ในการจัดเตรียมขยะก่อนทิ้ง"
       }
     `;
 
-    
-    const modelCandidates = ['gemini-2.5-flash', 'gemini-flash-latest'];
+    // รายชื่อโมเดลที่มีในระบบ เพื่อสลับอัตโนมัติหากพบโมเดลใดไม่พร้อมใช้งาน
+    const modelCandidates = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.5-flash'];
     let responseText = null;
     let lastError = null;
 
@@ -50,7 +50,7 @@ export async function POST(req) {
         if (responseText) break;
       } catch (err) {
         lastError = err;
-        console.warn(`Model ${modelName} failed, trying next...`);
+        console.warn(`Model ${modelName} failed, trying next candidate...`);
       }
     }
 
@@ -58,6 +58,7 @@ export async function POST(req) {
       throw new Error(lastError ? lastError.message : 'ไม่สามารถเชื่อมต่อ AI Model ได้');
     }
 
+    // ทำความสะอาด JSON Response
     const cleanedText = responseText
       .replace(/```json/gi, '')
       .replace(/```/g, '')
@@ -65,6 +66,7 @@ export async function POST(req) {
 
     const result = JSON.parse(cleanedText);
 
+    // บันทึกลง Supabase
     await supabase.from('waste_logs').insert([
       {
         telegram_user_id: 'web_user',
