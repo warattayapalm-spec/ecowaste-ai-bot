@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { supabase } from '../lib/supabaseClient';
 
 export default function Home() {
   const [logs, setLogs] = useState([]);
@@ -16,18 +15,15 @@ export default function Home() {
 
   async function fetchLogs() {
     try {
-      const { data, error } = await supabase
-        .from('waste_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Fetch logs error:', error);
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      if (data.success) {
+        setLogs(data.logs || []);
       } else {
-        setLogs(data || []);
+        console.error('Fetch logs error:', data.error);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Fetch logs network error:', err);
     } finally {
       setLoading(false);
     }
@@ -58,7 +54,6 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         setResult(data.result);
-        // ดึงข้อมูลสถิติล่าสุดมาอัปเดตในตารางทันที
         await fetchLogs();
       } else {
         alert('เกิดข้อผิดพลาดในการวิเคราะห์: ' + (data.error || 'โปรดลองอีกครั้ง'));
@@ -97,7 +92,7 @@ export default function Home() {
 
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem 1.25rem' }}>
         
-        {/* Camera Upload Card */}
+        {/* Camera Upload Section */}
         <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', padding: '2rem 1.5rem', textAlign: 'center', marginBottom: '2rem', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' }}>
           <input 
             type="file" 
@@ -164,7 +159,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* Analytics Dashboard */}
+        {/* Summary Dashboard */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>จำนวนขยะที่สแกน</p>
@@ -184,7 +179,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scan Log History Table */}
+        {/* Logs Table */}
         <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden' }}>
           <div style={{ padding: '1.2rem 1.5rem', borderBottom: '1px solid #334155' }}>
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>📋 ประวัติการสแกนล่าสุด</h3>
