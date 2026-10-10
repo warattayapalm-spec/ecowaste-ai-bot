@@ -14,23 +14,18 @@ export async function POST(req) {
     const mimeType = file.type || 'image/jpeg';
 
     const prompt = `
-      คุณคือระบบวิเคราะห์ประเภทขยะอัจฉริยะ โปรดสังเกตภาพอย่างละเอียด:
-      1. ตรวจสอบยี่ห้อ ข้อความ ตัวหนังสือบนบรรจุภัณฑ์ (เช่น Protex = แป้งเย็น/ผลิตภัณฑ์ดูแลร่างกาย, Coke = กระป๋องน้ำอัดลม ฯลฯ)
-      2. อย่าเดาวัตถุจากแค่รูปทรงหรือสี ให้ใช้ข้อความฉลากประกอบเสมอ
-      
-      ระบุผลลัพธ์เป็น JSON ภาษาไทยเท่านั้นในรูปแบบนี้ (ห้ามใส่ markdown code block หรือคำอื่นเด็ดขาด):
+      วิเคราะห์ภาพขยะนี้อย่างละเอียด และตอบกลับเป็น JSON ภาษาไทยเท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่คำเกริ่น ห้ามใส่ markdown code block หรือคำอื่นเด็ดขาด):
       {
-        "item_name": "ชื่อวัตถุ/บรรจุภัณฑ์ภาษาไทยอย่างถูกต้อง (เช่น ขวดแป้งเย็น Protex, ขวดน้ำพลาสติก)",
+        "item_name": "ชื่อขยะภาษาไทย",
         "waste_type": "ประเภทขยะ (ขยะรีไซเคิล / ขยะทั่วไป / ขยะอันตราย / ขยะอินทรีย์)",
         "bin_color": "สีถังขยะที่ต้องทิ้ง (เหลือง / น้ำเงิน / แดง / เขียว)",
-        "est_weight_g": 150,
-        "carbon_saved_kg": 0.05,
+        "est_weight_g": 35,
+        "carbon_saved_kg": 0.085,
         "est_value_thb": 0.50,
-        "disposal_guide": "วิธีจัดเตรียมขยะสั้นๆ ก่อนทิ้ง"
+        "disposal_guide": "ข้อแนะนำสั้นๆ ในการจัดเตรียมขยะก่อนทิ้ง"
       }
     `;
 
-    // เรียกใช้โมเดล Vision ของ Groq ชื่อที่ถูกต้อง
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -38,7 +33,7 @@ export async function POST(req) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-preview',
+        model: 'llama-3.2-11b-vision-instruct',
         messages: [
           {
             role: 'user',
@@ -53,7 +48,7 @@ export async function POST(req) {
             ]
           }
         ],
-        temperature: 0.1,
+        temperature: 0.2,
         max_tokens: 300,
         response_format: { type: 'json_object' }
       })
