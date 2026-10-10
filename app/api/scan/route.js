@@ -30,6 +30,7 @@ export async function POST(req) {
       }
     `;
 
+    // เรียกใช้โมเดล Vision ของ Groq ชื่อที่ถูกต้อง
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -37,7 +38,7 @@ export async function POST(req) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-instruct',
+        model: 'llama-3.2-11b-vision-preview',
         messages: [
           {
             role: 'user',
