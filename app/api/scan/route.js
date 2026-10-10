@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '../../../lib/supabaseClient';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(req) {
   try {
@@ -15,11 +12,12 @@ export async function POST(req) {
 
     const arrayBuffer = await file.arrayBuffer();
     const base64Image = Buffer.from(arrayBuffer).toString('base64');
+    const mimeType = file.type || 'image/jpeg';
 
     const prompt = `
-      วิเคราะห์ภาพขยะนี้อย่างละเอียด และตอบกลับเป็น JSON เท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่คำเกริ่น ห้ามใส่ markdown code block หรือคำอื่นเด็ดขาด):
+      วิเคราะห์ภาพขยะนี้อย่างละเอียด และตอบกลับเป็น JSON ภาษาไทยเท่านั้นในรูปแบบต่อไปนี้ (ห้ามใส่คำเกริ่น ห้ามใส่ markdown code block หรือคำอื่นเด็ดขาด):
       {
-        "item_name": "ชื่อขยะภาษาไทยอย่างเป็นทางการ",
+        "item_name": "ชื่อขยะภาษาไทย",
         "waste_type": "ประเภทขยะ (ขยะรีไซเคิล / ขยะทั่วไป / ขยะอันตราย / ขยะอินทรีย์)",
         "bin_color": "สีถังขยะที่ต้องทิ้ง (เหลือง / น้ำเงิน / แดง / เขียว)",
         "est_weight_g": 35,
@@ -29,54 +27,43 @@ export async function POST(req) {
       }
     `;
 
-    // รายชื่อโมเดลที่รองรับ Free Tier API Key ในปัจจุบัน
-    const modelCandidates = [
-      'gemini-2.5-flash',
-      'gemini-1.5-flash-latest',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash'
-    ];
-
-    let responseText = null;
-    let lastError = null;
-
-    for (const modelName of modelCandidates) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const res = await model.generateContent([
-          prompt,
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.2-11b-vision-preview',
+        messages: [
           {
-            inlineData: {
-              data: base64Image,
-              mimeType: file.type || 'image/jpeg'
-            }
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`
+                }
+              }
+            ]
           }
-        ]);
-        
-        const candidateText = res.response.text();
-        if (candidateText && candidateText.trim().length > 0) {
-          responseText = candidateText;
-          break; // เมื่อพบโมเดลที่ใช้งานได้ ให้หยุดวนลูปทันที
-        }
-      } catch (err) {
-        lastError = err;
-        console.warn(`Model candidate [${modelName}] failed, trying next...`, err.message);
-      }
+        ],
+        temperature: 0.2,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    const groqData = await groqRes.json();
+
+    if (!groqRes.ok) {
+      throw new Error(groqData.error?.message || 'เกิดข้อผิดพลาดจาก Groq API');
     }
 
-    if (!responseText) {
-      throw new Error(lastError ? `[AI Service Error]: ${lastError.message}` : 'ไม่สามารถดึงข้อมูลจาก AI Model ได้');
-    }
-
-    // ทำความสะอาด JSON Response (ตัด markdown code blocks ออก)
-    const cleanedText = responseText
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
-
+    const responseText = groqData.choices[0].message.content;
+    const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
     const result = JSON.parse(cleanedText);
 
-    // บันทึกลง Supabase
     await supabase.from('waste_logs').insert([
       {
         telegram_user_id: 'web_user',
@@ -93,7 +80,7 @@ export async function POST(req) {
 
     return NextResponse.json({ success: true, result });
   } catch (err) {
-    console.error('API Scan Error Details:', err);
+    console.error('API Scan Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
