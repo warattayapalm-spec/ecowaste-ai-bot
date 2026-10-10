@@ -27,7 +27,7 @@ export async function POST(req) {
       }
     `;
 
-    // ใช้โมเดล Vision หลักของ Groq ที่เสถียร พร้อมจำกัด max_tokens ป้องกัน Error
+    // เรียกใช้ Groq Vision API แบบกำหนด max_tokens ป้องกัน Token Limit Exceeded
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
