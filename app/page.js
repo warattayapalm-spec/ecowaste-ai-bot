@@ -5,7 +5,11 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [bottleCount, setBottleCount] = useState(10);
+  
+  // State สำหรับเครื่องมือคำนวณหลายประเภท
+  const [itemType, setItemType] = useState('pet'); // pet, can, cardboard, glass
+  const [itemCount, setItemCount] = useState(10);
+  
   const fileInputRef = useRef(null);
 
   const handleFileChange = async (e) => {
@@ -43,9 +47,18 @@ export default function Home() {
     }
   };
 
-  const calcWeight = (bottleCount * 25) / 1000;
-  const calcValue = (bottleCount * 0.25).toFixed(2);
-  const calcCarbon = (bottleCount * 0.026).toFixed(3);
+  // ฐานข้อมูลอัตราส่วนคำนวณต่อชิ้น/หน่วย
+  const wasteRates = {
+    pet: { name: 'ขวดพลาสติกใส (PET)', unit: 'ขวด', weightG: 25, priceThb: 0.25, carbonKg: 0.026 },
+    can: { name: 'กระป๋องอลูมิเนียม', unit: 'กระป๋อง', weightG: 15, priceThb: 0.50, carbonKg: 0.095 },
+    cardboard: { name: 'กล่องลังกระดาษ', unit: 'กล่อง', weightG: 150, priceThb: 0.45, carbonKg: 0.120 },
+    glass: { name: 'ขวดแก้ว', unit: 'ขวด', weightG: 200, priceThb: 0.60, carbonKg: 0.080 },
+  };
+
+  const selectedRate = wasteRates[itemType];
+  const calcWeight = ((itemCount * selectedRate.weightG) / 1000).toFixed(2);
+  const calcValue = (itemCount * selectedRate.priceThb).toFixed(2);
+  const calcCarbon = (itemCount * selectedRate.carbonKg).toFixed(3);
 
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -137,7 +150,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* Plastic Calculator & Eco Knowledge Section */}
+        {/* Multi-type Calculator & Eco Knowledge Section */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
           
           {/* Quick Calculator */}
@@ -147,17 +160,46 @@ export default function Home() {
             </h3>
 
             <div style={{ background: '#0f172a', padding: '1.25rem', borderRadius: '16px', border: '1px solid #334155' }}>
+              
+              {/* เลือกประเภทขยะ */}
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
-                  จำนวนขวดพลาสติกใส (PET):
+                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                  เลือกประเภทขยะ:
+                </label>
+                <select 
+                  value={itemType} 
+                  onChange={(e) => setItemType(e.target.value)}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #475569',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    padding: '0.5rem 0.8rem',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="pet">🥤 ขวดพลาสติกใส (PET)</option>
+                  <option value="can">🥫 กระป๋องอลูมิเนียม</option>
+                  <option value="cardboard">📦 กล่องลังกระดาษ</option>
+                  <option value="glass">🍾 ขวดแก้ว</option>
+                </select>
+              </div>
+
+              {/* ระบุจำนวน */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                  จำนวน ({selectedRate.unit}):
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <input 
                     type="number" 
                     min="1" 
                     max="1000" 
-                    value={bottleCount} 
-                    onChange={(e) => setBottleCount(Math.max(1, Number(e.target.value)))}
+                    value={itemCount} 
+                    onChange={(e) => setItemCount(Math.max(1, Number(e.target.value)))}
                     style={{
                       backgroundColor: '#1e293b',
                       border: '1px solid #475569',
@@ -169,10 +211,11 @@ export default function Home() {
                       width: '100px'
                     }}
                   />
-                  <span style={{ color: '#e2e8f0', fontSize: '0.9rem' }}>ขวด</span>
+                  <span style={{ color: '#e2e8f0', fontSize: '0.9rem' }}>{selectedRate.unit}</span>
                 </div>
               </div>
 
+              {/* สรุปผลคำนวณ */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', paddingTop: '0.85rem', borderTop: '1px dashed #334155' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>น้ำหนักรวม</span>
@@ -187,6 +230,7 @@ export default function Home() {
                   <div style={{ fontSize: '1.05rem', fontWeight: '700', color: '#34d399' }}>+{calcCarbon} kgCO2e</div>
                 </div>
               </div>
+
             </div>
           </section>
 
