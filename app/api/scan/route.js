@@ -27,47 +27,69 @@ export async function POST(req) {
       }
     `;
 
-    // ใช้โมเดล Vision หลักของ Groq ที่เสถียร พร้อมจำกัด max_tokens ป้องกัน Error
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-instruct',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
+    // รายชื่อโมเดล Vision ปัจจุบันของ Groq (เรียงลำดับจากตัวใหม่ล่าสุด)
+    const visionModels = [
+      'llama-3.2-11b-vision-instruct',
+      'llama-3.2-90b-vision-instruct',
+      'qwen/qwen3.8-27b'
+    ];
+
+    let responseText = null;
+    let lastErrorMsg = '';
+
+    for (const modelName of visionModels) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [
               {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64Image}`
-                }
+                role: 'user',
+                content: [
+                  { type: 'text', text: prompt },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${mimeType};base64,${base64Image}`
+                    }
+                  }
+                ]
               }
-            ]
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 300,
-        response_format: { type: 'json_object' }
-      })
-    });
+            ],
+            temperature: 0.2,
+            response_format: { type: 'json_object' }
+          })
+        });
 
-    const groqData = await groqRes.json();
+        const groqData = await groqRes.json();
 
-    if (!groqRes.ok) {
-      throw new Error(groqData.error?.message || 'เกิดข้อผิดพลาดจาก Groq API');
+        if (groqRes.ok && groqData.choices && groqData.choices[0]?.message?.content) {
+          responseText = groqData.choices[0].message.content;
+          break; // สำเร็จแล้วออกจากลูปทันที
+        } else {
+          lastErrorMsg = groqData.error?.message || `Model ${modelName} returned error`;
+          console.warn(`Groq Model ${modelName} failed:`, lastErrorMsg);
+        }
+      } catch (err) {
+        lastErrorMsg = err.message;
+        console.warn(`Fetch error for ${modelName}:`, err.message);
+      }
     }
 
-    const responseText = groqData.choices[0].message.content;
+    if (!responseText) {
+      throw new Error(lastErrorMsg || 'ไม่สามารถเชื่อมต่อ Groq Vision API ได้');
+    }
+
     const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
     const result = JSON.parse(cleanedText);
 
     // บันทึกลง Supabase
-    const { error: dbError } = await supabase.from('waste_logs').insert([
+    await supabase.from('waste_logs').insert([
       {
         telegram_user_id: 'web_user',
         telegram_username: 'Web User',
@@ -80,11 +102,6 @@ export async function POST(req) {
         disposal_guide: result.disposal_guide || 'ทิ้งลงถังขยะให้ถูกต้อง',
       }
     ]);
-
-    if (dbError) {
-      console.error('Supabase Insert Error:', dbError);
-      throw new Error(`บันทึกฐานข้อมูลไม่สำเร็จ: ${dbError.message}`);
-    }
 
     return NextResponse.json({ success: true, result });
   } catch (err) {
