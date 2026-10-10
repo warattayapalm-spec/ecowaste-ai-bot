@@ -15,12 +15,22 @@ export default function Home() {
   }, []);
 
   async function fetchLogs() {
-    const { data } = await supabase
-      .from('waste_logs')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setLogs(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('waste_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Fetch logs error:', error);
+      } else {
+        setLogs(data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleFileChange = async (e) => {
@@ -48,7 +58,8 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         setResult(data.result);
-        fetchLogs();
+        // ดึงข้อมูลสถิติล่าสุดมาอัปเดตในตารางทันที
+        await fetchLogs();
       } else {
         alert('เกิดข้อผิดพลาดในการวิเคราะห์: ' + (data.error || 'โปรดลองอีกครั้ง'));
       }
@@ -66,7 +77,7 @@ export default function Home() {
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* Navbar Header */}
+      {/* Header */}
       <header style={{ borderBottom: '1px solid #1e293b', backgroundColor: '#0f172a', position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(8px)' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -86,7 +97,7 @@ export default function Home() {
 
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem 1.25rem' }}>
         
-        {/* Camera / Upload Section */}
+        {/* Camera Upload Card */}
         <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', padding: '2rem 1.5rem', textAlign: 'center', marginBottom: '2rem', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' }}>
           <input 
             type="file" 
@@ -123,12 +134,12 @@ export default function Home() {
             >
               {analyzing ? '⏳ กำลังประมวลผล AI...' : '📸 ถ่ายรูป / สแกนขยะบนเว็บ'}
             </button>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.75rem', margin: '0.75rem 0 0' }}>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.75rem 0 0' }}>
               เปิดกล้องมือถือถ่ายขยะได้ทันที ระบบจะช่วยประเมินประเภท น้ำหนัก และมูลค่าให้อัตโนมัติ
             </p>
           </div>
 
-          {/* AI Result Cards */}
+          {/* AI Result Box */}
           {result && (
             <div style={{ marginTop: '2rem', textAlign: 'left', background: '#0f172a', padding: '1.5rem', borderRadius: '16px', border: '1px solid #059669', boxShadow: '0 4px 20px rgba(5, 150, 105, 0.15)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid #1e293b' }}>
@@ -153,7 +164,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* Analytics Summary */}
+        {/* Analytics Dashboard */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>จำนวนขยะที่สแกน</p>
@@ -173,14 +184,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scan Log History */}
+        {/* Scan Log History Table */}
         <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden' }}>
           <div style={{ padding: '1.2rem 1.5rem', borderBottom: '1px solid #334155' }}>
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>📋 ประวัติการสแกนล่าสุด</h3>
           </div>
 
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>กำลังโหลดข้อมูลสถิติ...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>กำลังโหลดข้อมูล...</div>
+          ) : logs.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>ยังไม่มีประวัติการสแกนขยะ</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
