@@ -53,7 +53,7 @@ export default function Home() {
         alert('เกิดข้อผิดพลาดในการวิเคราะห์: ' + (data.error || 'โปรดลองอีกครั้ง'));
       }
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     } finally {
       setAnalyzing(false);
     }
@@ -61,32 +61,33 @@ export default function Home() {
 
   const totalCarbon = logs.reduce((acc, cur) => acc + Number(cur.carbon_saved_kg || 0), 0);
   const totalValue = logs.reduce((acc, cur) => acc + Number(cur.est_value_thb || 0), 0);
+  const totalWeight = logs.reduce((acc, cur) => acc + Number(cur.est_weight_g || 0), 0);
 
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* Header Bar */}
+      {/* Navbar Header */}
       <header style={{ borderBottom: '1px solid #1e293b', backgroundColor: '#0f172a', position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(8px)' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.25rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}>
               🌱
             </div>
             <div>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: '700', margin: 0, letterSpacing: '-0.025em', color: '#fff' }}>EcoWaste AI</h1>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>Smart Waste Classification Platform</p>
+              <h1 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0, color: '#fff', letterSpacing: '-0.02em' }}>EcoWaste AI</h1>
+              <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>Smart Camera Waste Classifier</p>
             </div>
           </div>
-          <span style={{ fontSize: '0.75rem', backgroundColor: '#064e3b', color: '#34d399', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontWeight: '600', border: '1px solid #059669' }}>
-            ● System Active
+          <span style={{ fontSize: '0.75rem', backgroundColor: '#064e3b', color: '#34d399', padding: '0.3rem 0.8rem', borderRadius: '9999px', fontWeight: '600', border: '1px solid #059669' }}>
+            ● AI Ready
           </span>
         </div>
       </header>
 
-      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem 1.25rem' }}>
         
-        {/* Upload & Camera Section */}
-        <section style={{ background: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '2rem', textAlign: 'center', marginBottom: '2rem', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)' }}>
+        {/* Camera / Upload Section */}
+        <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', padding: '2rem 1.5rem', textAlign: 'center', marginBottom: '2rem', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' }}>
           <input 
             type="file" 
             accept="image/*" 
@@ -98,11 +99,11 @@ export default function Home() {
 
           {preview && (
             <div style={{ marginBottom: '1.5rem' }}>
-              <img src={preview} alt="Preview" style={{ maxHeight: '280px', borderRadius: '12px', border: '2px solid #475569', objectFit: 'contain' }} />
+              <img src={preview} alt="Preview" style={{ maxHeight: '260px', borderRadius: '14px', border: '2px solid #475569', objectFit: 'contain' }} />
             </div>
           )}
 
-          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '380px', margin: '0 auto' }}>
             <button 
               onClick={() => fileInputRef.current.click()} 
               disabled={analyzing}
@@ -111,40 +112,41 @@ export default function Home() {
                 background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
                 color: 'white',
                 padding: '1rem 1.5rem',
-                fontSize: '1rem',
-                fontWeight: '600',
+                fontSize: '1.05rem',
+                fontWeight: '700',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 14px 0 rgba(16, 185, 129, 0.39)',
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
                 transition: 'all 0.2s ease'
               }}
             >
-              {analyzing ? '⏳ กำลังวิเคราะห์ข้อมูล AI...' : '📸 สแกนขยะ / ถ่ายรูปภาพ'}
+              {analyzing ? '⏳ กำลังประมวลผล AI...' : '📸 ถ่ายรูป / สแกนขยะบนเว็บ'}
             </button>
             <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.75rem', margin: '0.75rem 0 0' }}>
-              รองรับไฟล์ภาพถ่ายขยะรีไซเคิล, ขยะทั่วไป, และขยะอินทรีย์
+              เปิดกล้องมือถือถ่ายขยะได้ทันที ระบบจะช่วยประเมินประเภท น้ำหนัก และมูลค่าให้อัตโนมัติ
             </p>
           </div>
 
           {/* AI Result Cards */}
           {result && (
-            <div style={{ marginTop: '2rem', textAlign: 'left', background: '#0f172a', padding: '1.5rem', borderRadius: '12px', border: '1px solid #059669' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #1e293b', pb: '0.75rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>✨</span>
-                <h3 style={{ margin: 0, color: '#34d399', fontSize: '1.1rem' }}>ผลการวิเคราะห์โดย Gemini AI</h3>
+            <div style={{ marginTop: '2rem', textAlign: 'left', background: '#0f172a', padding: '1.5rem', borderRadius: '16px', border: '1px solid #059669', boxShadow: '0 4px 20px rgba(5, 150, 105, 0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid #1e293b' }}>
+                <span style={{ fontSize: '1.3rem' }}>✨</span>
+                <h3 style={{ margin: 0, color: '#34d399', fontSize: '1.1rem', fontWeight: '700' }}>ผลการวิเคราะห์โดย AI</h3>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.9rem' }}>
-                <div><span style={{ color: '#94a3b8' }}>ชื่อวัตถุ:</span> <strong style={{ color: '#f8fafc' }}>{result.item_name}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>ประเภท:</span> <strong style={{ color: '#38bdf8' }}>{result.waste_type}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>ถังขยะที่แนะนำ:</span> <strong style={{ color: '#facc15' }}>สี{result.bin_color}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>การลดคาร์บอน:</span> <strong style={{ color: '#34d399' }}>+{result.carbon_saved_kg} kgCO2e</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>มูลค่าประเมิน:</span> <strong style={{ color: '#f97316' }}>+{result.est_value_thb} ฿</strong></div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', fontSize: '0.9rem' }}>
+                <div><span style={{ color: '#94a3b8' }}>ชื่อวัตถุ:</span> <strong style={{ color: '#f8fafc', display: 'block', fontSize: '1rem' }}>{result.item_name}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>หมวดหมู่:</span> <strong style={{ color: '#38bdf8', display: 'block', fontSize: '1rem' }}>{result.waste_type}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>ทิ้งในถังสี:</span> <strong style={{ color: '#facc15', display: 'block', fontSize: '1rem' }}>{result.bin_color}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>น้ำหนักประเมิน:</span> <strong style={{ color: '#e2e8f0', display: 'block', fontSize: '1rem' }}>~{result.est_weight_g} กรัม</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>ลดคาร์บอน:</span> <strong style={{ color: '#34d399', display: 'block', fontSize: '1rem' }}>+{result.carbon_saved_kg} kgCO2e</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>มูลค่าประเมิน:</span> <strong style={{ color: '#fbbf24', display: 'block', fontSize: '1rem' }}>+{result.est_value_thb} บาท</strong></div>
               </div>
 
-              <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px dashed #334155', fontSize: '0.875rem' }}>
-                <span style={{ color: '#94a3b8' }}>💡 ข้อแนะนำการทิ้ง: </span>
+              <div style={{ marginTop: '1.25rem', paddingTop: '0.85rem', borderTop: '1px dashed #334155', fontSize: '0.875rem' }}>
+                <span style={{ color: '#94a3b8', fontWeight: '600' }}>💡 วิธีจัดเตรียมก่อนทิ้ง: </span>
                 <span style={{ color: '#e2e8f0' }}>{result.disposal_guide}</span>
               </div>
             </div>
@@ -152,53 +154,59 @@ export default function Home() {
         </section>
 
         {/* Analytics Summary */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
-          <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid #334155' }}>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>ยอดรวมการสแกน</p>
-            <h2 style={{ fontSize: '1.875rem', fontWeight: '700', margin: '0.25rem 0 0', color: '#f8fafc' }}>{logs.length} <span style={{ fontSize: '0.875rem', fontWeight: '400', color: '#64748b' }}>รายการ</span></h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>จำนวนขยะที่สแกน</p>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#f8fafc' }}>{logs.length} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>ชิ้น</span></h2>
           </div>
-          <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid #334155' }}>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>ปริมาณคาร์บอนที่ลดได้รวม</p>
-            <h2 style={{ fontSize: '1.875rem', fontWeight: '700', margin: '0.25rem 0 0', color: '#34d399' }}>{totalCarbon.toFixed(3)} <span style={{ fontSize: '0.875rem', fontWeight: '400', color: '#64748b' }}>kgCO2e</span></h2>
+          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>น้ำหนักขยะรวมประเมิน</p>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#38bdf8' }}>{(totalWeight / 1000).toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>กก.</span></h2>
           </div>
-          <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid #334155' }}>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>มูลค่าประเมินรวมสะสม</p>
-            <h2 style={{ fontSize: '1.875rem', fontWeight: '700', margin: '0.25rem 0 0', color: '#fbbf24' }}>{totalValue.toFixed(2)} <span style={{ fontSize: '0.875rem', fontWeight: '400', color: '#64748b' }}>บาท</span></h2>
+          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>ลดคาร์บอนสะสมรวม</p>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#34d399' }}>{totalCarbon.toFixed(3)} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>kgCO2e</span></h2>
+          </div>
+          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>มูลค่าขยะสะสมรวม</p>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#fbbf24' }}>{totalValue.toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>บาท</span></h2>
           </div>
         </div>
 
-        {/* Data Table Section */}
-        <section style={{ background: '#1e293b', borderRadius: '16px', border: '1px solid #334155', overflow: 'hidden' }}>
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #334155' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>📋 ประวัติการประมวลผลล่าสุด</h3>
+        {/* Scan Log History */}
+        <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden' }}>
+          <div style={{ padding: '1.2rem 1.5rem', borderBottom: '1px solid #334155' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>📋 ประวัติการสแกนล่าสุด</h3>
           </div>
 
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>กำลังดึงข้อมูล...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>กำลังโหลดข้อมูลสถิติ...</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1px solid #334155' }}>
-                    <th style={{ padding: '0.875rem 1.5rem' }}>เวลา</th>
-                    <th style={{ padding: '0.875rem 1.5rem' }}>รายการขยะ</th>
-                    <th style={{ padding: '0.875rem 1.5rem' }}>ประเภท</th>
-                    <th style={{ padding: '0.875rem 1.5rem' }}>ลดคาร์บอน</th>
-                    <th style={{ padding: '0.875rem 1.5rem' }}>มูลค่าประเมิน</th>
+                    <th style={{ padding: '0.85rem 1.25rem' }}>เวลา</th>
+                    <th style={{ padding: '0.85rem 1.25rem' }}>รายการขยะ</th>
+                    <th style={{ padding: '0.85rem 1.25rem' }}>หมวดหมู่</th>
+                    <th style={{ padding: '0.85rem 1.25rem' }}>น้ำหนัก (g)</th>
+                    <th style={{ padding: '0.85rem 1.25rem' }}>ลดคาร์บอน</th>
+                    <th style={{ padding: '0.85rem 1.25rem' }}>มูลค่าประเมิน</th>
                   </tr>
                 </thead>
-                <tbody style={{ divideY: '1px solid #334155' }}>
+                <tbody>
                   {logs.map((log) => (
                     <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
-                      <td style={{ padding: '1rem 1.5rem', color: '#94a3b8' }}>{new Date(log.created_at).toLocaleString('th-TH')}</td>
-                      <td style={{ padding: '1rem 1.5rem', fontWeight: '600', color: '#f8fafc' }}>{log.item_name}</td>
-                      <td style={{ padding: '1rem 1.5rem' }}>
+                      <td style={{ padding: '1rem 1.25rem', color: '#94a3b8' }}>{new Date(log.created_at).toLocaleString('th-TH')}</td>
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: '600', color: '#f8fafc' }}>{log.item_name}</td>
+                      <td style={{ padding: '1rem 1.25rem' }}>
                         <span style={{ backgroundColor: '#0284c720', color: '#38bdf8', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', border: '1px solid #0284c740' }}>
                           {log.waste_type}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem 1.5rem', color: '#34d399', fontWeight: '500' }}>+{log.carbon_saved_kg} kg</td>
-                      <td style={{ padding: '1rem 1.5rem', color: '#fbbf24', fontWeight: '500' }}>+{log.est_value_thb} ฿</td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#e2e8f0' }}>{log.est_weight_g || 0} g</td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#34d399', fontWeight: '600' }}>+{log.carbon_saved_kg} kg</td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#fbbf24', fontWeight: '600' }}>+{log.est_value_thb} ฿</td>
                     </tr>
                   ))}
                 </tbody>
