@@ -5,6 +5,7 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [bottleCount, setBottleCount] = useState(10);
   const fileInputRef = useRef(null);
 
   const handleFileChange = async (e) => {
@@ -42,6 +43,11 @@ export default function Home() {
     }
   };
 
+  // คำนวณค่าประมาณการขวดพลาสติก PET (น้ำหนักเฉลี่ย 25g, ราคา 0.25 บาท, ลดคาร์บอน 0.026 kgCO2e/ขวด)
+  const calcWeight = (bottleCount * 25) / 1000;
+  const calcValue = (bottleCount * 0.25).toFixed(2);
+  const calcCarbon = (bottleCount * 0.026).toFixed(3);
+
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
@@ -66,7 +72,7 @@ export default function Home() {
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem 1.25rem' }}>
         
         {/* Camera Upload Section */}
-        <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', padding: '2rem 1.5rem', textAlign: 'center', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' }}>
+        <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', padding: '2rem 1.5rem', textAlign: 'center', marginBottom: '2rem', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' }}>
           <input 
             type="file" 
             accept="image/*" 
@@ -96,43 +102,4 @@ export default function Home() {
                 border: 'none',
                 borderRadius: '14px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {analyzing ? '⏳ กำลังประมวลผล AI...' : '📸 ถ่ายรูป / สแกนขยะบนเว็บ'}
-            </button>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.75rem 0 0' }}>
-              เปิดกล้องมือถือถ่ายขยะได้ทันที ระบบจะช่วยประเมินประเภท น้ำหนัก และมูลค่าให้อัตโนมัติ
-            </p>
-          </div>
-
-          {/* AI Result Box */}
-          {result && (
-            <div style={{ marginTop: '2rem', textAlign: 'left', background: '#0f172a', padding: '1.5rem', borderRadius: '16px', border: '1px solid #059669', boxShadow: '0 4px 20px rgba(5, 150, 105, 0.15)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid #1e293b' }}>
-                <span style={{ fontSize: '1.3rem' }}>✨</span>
-                <h3 style={{ margin: 0, color: '#34d399', fontSize: '1.1rem', fontWeight: '700' }}>ผลการวิเคราะห์โดย AI</h3>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', fontSize: '0.9rem' }}>
-                <div><span style={{ color: '#94a3b8' }}>ชื่อวัตถุ:</span> <strong style={{ color: '#f8fafc', display: 'block', fontSize: '1rem' }}>{result.item_name}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>หมวดหมู่:</span> <strong style={{ color: '#38bdf8', display: 'block', fontSize: '1rem' }}>{result.waste_type}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>ทิ้งในถังสี:</span> <strong style={{ color: '#facc15', display: 'block', fontSize: '1rem' }}>{result.bin_color}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>น้ำหนักประเมิน:</span> <strong style={{ color: '#e2e8f0', display: 'block', fontSize: '1rem' }}>~{result.est_weight_g} กรัม</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>ลดคาร์บอน:</span> <strong style={{ color: '#34d399', display: 'block', fontSize: '1rem' }}>+{result.carbon_saved_kg} kgCO2e</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>มูลค่าประเมิน:</span> <strong style={{ color: '#fbbf24', display: 'block', fontSize: '1rem' }}>+{result.est_value_thb} บาท</strong></div>
-              </div>
-
-              <div style={{ marginTop: '1.25rem', paddingTop: '0.85rem', borderTop: '1px dashed #334155', fontSize: '0.875rem' }}>
-                <span style={{ color: '#94a3b8', fontWeight: '600' }}>💡 วิธีจัดเตรียมก่อนทิ้ง: </span>
-                <span style={{ color: '#e2e8f0' }}>{result.disposal_guide}</span>
-              </div>
-            </div>
-          )}
-        </section>
-
-      </main>
-    </div>
-  );
-}
+                boxShadow: '0 4px 16px rgba(16
