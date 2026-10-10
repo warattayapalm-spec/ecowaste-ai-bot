@@ -29,8 +29,8 @@ export async function POST(req) {
       }
     `;
 
-    // รายชื่อโมเดลที่มีในระบบ เพื่อสลับอัตโนมัติหากพบโมเดลใดไม่พร้อมใช้งาน
-    const modelCandidates = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.5-flash'];
+    // ใช้ gemini-3.8-flash เป็นตัวหลักตามที่ Google API แนะนำ
+    const modelCandidates = ['gemini-3.8-flash', 'gemini-1.5-flash'];
     let responseText = null;
     let lastError = null;
 
