@@ -1,33 +1,11 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 
 export default function Home() {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
   const [preview, setPreview] = useState(null);
   const fileInputRef = useRef(null);
-
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
-  async function fetchLogs() {
-    try {
-      const res = await fetch('/api/logs');
-      const data = await res.json();
-      if (data.success) {
-        setLogs(data.logs || []);
-      } else {
-        console.error('Fetch logs error:', data.error);
-      }
-    } catch (err) {
-      console.error('Fetch logs network error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -54,7 +32,6 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         setResult(data.result);
-        await fetchLogs();
       } else {
         alert('เกิดข้อผิดพลาดในการวิเคราะห์: ' + (data.error || 'โปรดลองอีกครั้ง'));
       }
@@ -64,10 +41,6 @@ export default function Home() {
       setAnalyzing(false);
     }
   };
-
-  const totalCarbon = logs.reduce((acc, cur) => acc + Number(cur.carbon_saved_kg || 0), 0);
-  const totalValue = logs.reduce((acc, cur) => acc + Number(cur.est_value_thb || 0), 0);
-  const totalWeight = logs.reduce((acc, cur) => acc + Number(cur.est_weight_g || 0), 0);
 
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -93,7 +66,7 @@ export default function Home() {
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem 1.25rem' }}>
         
         {/* Camera Upload Section */}
-        <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', padding: '2rem 1.5rem', textAlign: 'center', marginBottom: '2rem', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' }}>
+        <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', padding: '2rem 1.5rem', textAlign: 'center', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' }}>
           <input 
             type="file" 
             accept="image/*" 
@@ -155,70 +128,6 @@ export default function Home() {
                 <span style={{ color: '#94a3b8', fontWeight: '600' }}>💡 วิธีจัดเตรียมก่อนทิ้ง: </span>
                 <span style={{ color: '#e2e8f0' }}>{result.disposal_guide}</span>
               </div>
-            </div>
-          )}
-        </section>
-
-        {/* Summary Dashboard */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>จำนวนขยะที่สแกน</p>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#f8fafc' }}>{logs.length} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>ชิ้น</span></h2>
-          </div>
-          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>น้ำหนักขยะรวมประเมิน</p>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#38bdf8' }}>{(totalWeight / 1000).toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>กก.</span></h2>
-          </div>
-          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>ลดคาร์บอนสะสมรวม</p>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#34d399' }}>{totalCarbon.toFixed(3)} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>kgCO2e</span></h2>
-          </div>
-          <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '16px', border: '1px solid #334155' }}>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>มูลค่าขยะสะสมรวม</p>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0.2rem 0 0', color: '#fbbf24' }}>{totalValue.toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: '#64748b' }}>บาท</span></h2>
-          </div>
-        </div>
-
-        {/* Logs Table */}
-        <section style={{ background: '#1e293b', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden' }}>
-          <div style={{ padding: '1.2rem 1.5rem', borderBottom: '1px solid #334155' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>📋 ประวัติการสแกนล่าสุด</h3>
-          </div>
-
-          {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>กำลังโหลดข้อมูล...</div>
-          ) : logs.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>ยังไม่มีประวัติการสแกนขยะ</div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1px solid #334155' }}>
-                    <th style={{ padding: '0.85rem 1.25rem' }}>เวลา</th>
-                    <th style={{ padding: '0.85rem 1.25rem' }}>รายการขยะ</th>
-                    <th style={{ padding: '0.85rem 1.25rem' }}>หมวดหมู่</th>
-                    <th style={{ padding: '0.85rem 1.25rem' }}>น้ำหนัก (g)</th>
-                    <th style={{ padding: '0.85rem 1.25rem' }}>ลดคาร์บอน</th>
-                    <th style={{ padding: '0.85rem 1.25rem' }}>มูลค่าประเมิน</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log) => (
-                    <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
-                      <td style={{ padding: '1rem 1.25rem', color: '#94a3b8' }}>{new Date(log.created_at).toLocaleString('th-TH')}</td>
-                      <td style={{ padding: '1rem 1.25rem', fontWeight: '600', color: '#f8fafc' }}>{log.item_name}</td>
-                      <td style={{ padding: '1rem 1.25rem' }}>
-                        <span style={{ backgroundColor: '#0284c720', color: '#38bdf8', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', border: '1px solid #0284c740' }}>
-                          {log.waste_type}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', color: '#e2e8f0' }}>{log.est_weight_g || 0} g</td>
-                      <td style={{ padding: '1rem 1.25rem', color: '#34d399', fontWeight: '600' }}>+{log.carbon_saved_kg} kg</td>
-                      <td style={{ padding: '1rem 1.25rem', color: '#fbbf24', fontWeight: '600' }}>+{log.est_value_thb} ฿</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           )}
         </section>
